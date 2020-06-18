@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./button_style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            width: 100%;
+            height: 100%;
+        }
+
+        .text {
+            left: 0;
+            top: 0;
+            position: absolute;
+            width: 200px;
+            height: 100px;
+            font-size: 30px;
+            margin-left: 2rem;
+
+        }
+
+        #game {
+            width: 100vw;
+            height: 100vh;
+            background-image: url(./背景.jpg);
+            background-size: cover;
+            cursor: url(./spaceship.png) 0 0, auto;
+
+            /* 跑出去就隱藏 否則ufo會跑出去 */
+            overflow: hidden;
+            position: relative;
+        }
+
+        #game>.ufoimg {
+            position: absolute;
+            height: 100px;
+            z-index: 5;
+        }
+
+
+        #game>.lightWaveimg {
+            position: absolute;
+            height: 50px;
+            z-index: 5;
+
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="game">
+    </div>
+    <div class="text">
+        <input type="button" value="開始遊戲" id="btn-start" class="css_button">
+        <input type="button" id="btn-restart" value="重新開始" class="css_button">
+        <p style="color: aliceblue;">分數:<span id="text-score">0</span></p>
+        <p style="color: aliceblue;">剩餘時間:<span id="text-time">60</span>秒</p>
+
+    </div>
+    <script src="./jquery-3.5.0.min.js"></script>
+
+    <script>
+        // 分數
+        let score = 0;
+        // 剩餘時間
+        let timeleft = 60;
+        // 遊戲計時器
+        let gametimer = 0;
+        // ufo的流水號  要控制每一隻的ufo
+        let ufo = 0;
+        // 光波
+        let liwa = 0;
+        let inGame = false;
+        $("#btn-restart").show(true)
+        const rand = (num) => {
+            return Math.round(Math.random() * num)
+        }
+
+        // 移動
+        const moveuf = (ufo) => {
+            $(`#uf${ufo}`).animate({
+                // 移動範圍
+                top: `+=50px`,
+                left: `${rand(1100) + 50}px`
+
+            }, 1000, function () {
+                // 再執行function
+                moveuf(ufo)
+
+            })
+        }
+        // // 光波 lightwave
+        const movelightwave = (liwa) => {
+            // console.log(liwa + "fly");
+            $(`#lightWave${liwa}`).animate({
+                top: `-=50px`
+            }, 100, function () {
+                $(".ufoimg").each(function () {
+                    // 光波左邊
+                    const leftlight = $(`#lightWave${liwa}`).css("left").slice(0, -2) * 1
+
+                    // ufo右邊
+                    const left1 = $(this).css("left").slice(0, -2) * 1 + 158
+
+                    // ufo左邊
+                    const left2 = $(this).css("left").slice(0, -2) * 1 - 25
+
+                    // 光波上面
+                    const toplight = $(`#lightWave${liwa}`).css("top").slice(0, -2) * 1
+
+                    // ufo 下面
+                    const topufo1 = $(this).css("top").slice(0, -2) * 1 + 50
+
+                    // ufo 上面
+                    const topufo2 = $(this).css("top").slice(0, -2) * 1
+                    // console.log('topufo2' + topufo2);
+
+
+                    if ((leftlight >= left2 && leftlight <= left1) &&
+                        (toplight >= topufo2 && toplight <= topufo1)
+                    ) {
+                        score++;
+                        $("#text-score").text(score);
+                        $(`#lightWave${liwa}`).attr("src", "");
+
+                        $(this).attr("src", "./爆炸2.gif")
+                        setTimeout(() => {
+                            $(this).remove()
+                        }, 1050)
+                    }
+
+                })
+
+                if ($(this).css('top') < '0px') {
+                    $(this).remove()
+                }
+                else {
+                    movelightwave(liwa);
+                }
+            })
+        }
+        function aaa() {
+            $("#btn-start").click(function () {
+                inGame = true
+                // 停用開始按鈕 
+                $(this).attr("disabled", true)
+                $("#btn-restart").show(true)
+                // 重設
+                score = 0;
+                $("#text-score").text(score);
+                timeleft = 60;
+                $("#text-time").text(timeleft);
+
+                // 遊戲倒數
+                gametimer = setInterval(() => {
+                    // 倒數
+                    timeleft--;
+                    $("#text-time").text(timeleft);
+
+                    if (timeleft == 0) {
+                        // 停止計時器
+                        clearInterval(gametimer);
+                        // 啟用開始按鈕
+                        $(this).attr("disabled", false);
+                        $("#btn-restart").hide(true)
+                        setTimeout(() => {
+                            alert("時間到");
+
+                        }, 100)
+                        // 清場
+                        $("#game img").remove();
+
+                    }
+                    else {
+                        inGame = true
+                        // 隨機
+                        const num = rand(10);
+                        // 如果抽到數字大於1，產生一個ufo
+                        if (num > 1) {
+                            $("#game").append(`<img class="ufoimg" src="./ufo1.gif" id="uf${ufo}">`);
+                            // 出現的位置
+                            $(`#uf${ufo}`).css({
+
+                                top: rand(10) + "%",
+                                left: rand(80) + "%"
+                            })
+                            moveuf(ufo);
+                            ufo++;
+                        }
+
+                        for (let i = 0; i < $(".ufoimg").length; i++) {
+                            if (($(".ufoimg").eq(i).css("top").slice(0, -2) * 1 + 50) > 500 && inGame) {
+                                // 清場
+                                $("#game img").remove();
+                                // 停止計時器
+                                clearInterval(gametimer);
+                                setTimeout(() => {
+                                    alert("遊戲結束");
+                                }, 100)
+                                // 啟用開始按鈕
+                                $(this).attr("disabled", false);
+                                $("#btn-restart").hide(true)
+                            }
+                        }
+                    }
+                }, 1000)
+
+
+                $("#game").on("click", function (event) {
+                    console.log("click");
+
+                    // 創建一個liwa
+                    $("#game").append(`<img class="lightWaveimg" src="./發射2.png" id="lightWave${liwa}">`);
+
+                    $(`#lightWave${liwa}`).css({
+                        // 要去搜尋 偵測滑鼠
+                        // 一開始出現的地方 要換算left top
+                        left: event.pageX + 'px',
+                        top: event.pageY + 'px'
+                    })
+                    movelightwave(liwa)
+                    liwa++;
+                })
+
+            })
+        }
+        aaa();
+        $("#btn-restart").click(function () {
+            score = 0;
+            $("#text-score").text(score);
+            timeleft = 60;
+            $("#text-time").text(timeleft);
+            $("#game").html("");
+            aaa();
+
+        })
+
+    </script>
+</body>
+
+</html>
